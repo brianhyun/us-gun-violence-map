@@ -1,12 +1,37 @@
+import os
 import streamlit as st
 import pandas as pd
 import pydeck as pdk
 import altair as alt
+import kagglehub as kgh
+from dotenv import load_dotenv
+
+def load_kaggle_credentials():
+    load_dotenv()
+    env_mode = os.getenv("ENV_MODE", "production")
+
+    if env_mode == "development":
+        username = os.getenv("KAGGLE_USERNAME")
+        key = os.getenv("KAGGLE_KEY")
+    else:
+        username = st.secrets["kaggle"]["username"]
+        key = st.secrets["kaggle"]["key"]
+
+    if not username or not key:
+        raise ValueError("Kaggle credentials are missing!")
+
+    # Set environment variables for Kaggle API
+    os.environ["KAGGLE_USERNAME"] = username
+    os.environ["KAGGLE_KEY"] = key
+
 
 # Load dataset
 @st.cache_data
 def load_data(): 
-    df = pd.read_csv("data.csv")
+    load_kaggle_credentials()
+    path = kgh.dataset_download("jameslko/gun-violence-data")
+    files = os.listdir(path)
+    df = pd.read_csv(os.path.join(path, files[0]))
     df = df.dropna(subset=["latitude", "longitude"])
     return df
 
